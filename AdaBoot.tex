@@ -1,0 +1,277 @@
+\documentclass[UTF8]{ctexart}
+ 
+\CTEXsetup[format={\Large\bfseries}]{section}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\renewcommand{\algorithmicrequire}{ \textbf{Input:}} %Use Input in the format of Algorithm
+\renewcommand{\algorithmicensure}{ \textbf{Output:}} %UseOutput in the format of Algorithm
+% 将require 和 ensure 改成了input 和 output.
+ 
+\title{提升方法AdaBoost法1:算法介绍}
+ 
+\begin{document}
+ 
+\maketitle
+ 
+\section{基本思路与概念}
+
+\subsection{强可学习} 在概率近似正确(probably approximately correct，PAC)学习框架中，如果一个类存在一个多项式算法能够学习它，并且正确率很好，那么就称这个概念为强可学习。
+\subsection{弱可学习} 相反，如果能够学习它，但是正确率仅仅比随机猜测好一点点，那么就称这个概念为弱可学习。
+\subsection{弱和强是等价的} Schapire 证明了强可学习和弱可学习是等价的。
+
+
+
+\subsection{两个问题}
+对于分类而言，给定一个训练样本，求比较粗糙的分类算法比求更加精确的分类算法要简单很多。提升算法就是从弱分类出发，然后构造一系列弱分类算法，并将这些弱分类器组合成一个强分类器。
+这一系列弱分类器大多是通过改变样本的分布或者称为权值（一个意思），来构建。
+
+\subsubsection{问题1}
+每一轮如何改变权值或者分布？
+\subsubsection{问题2}
+最后如何将这些弱分类器进行组合，使其称为强分类器？
+
+
+\section{AdaBoost算法}
+假设为二分类问题。
+
+\begin{algorithm}[htb] 
+	    	\caption{ AdaBoost算法.} 
+	    	\label{alg:Framwork} 
+	    	\begin{algorithmic}[1] %这个1 表示每一行都显示数字
+	    		\REQUIRE ~~\\ %算法的输入参数：Input
+	%    		The set of positive samples for current batch, $P_n$;\\
+	%    		The set of unlabelled samples for current batch, $U_n$;\\
+	%    		Ensemble of classifiers on former batches, $E_{n-1}$;
+	    		训练数据集$T=\{(x_1,y_1),(x_2,y_2),...,(x_N,y_N)\}$其中$x_i \in X=R^n,y_i \in Y=\{-1,+1\},i=1,2,...,N $;弱学习算法$G_1(x)$\\
+	    		
+	    		
+	    		\ENSURE ~~\\ %算法的输出：Output
+	%    		Ensemble of classifiers on the current batch, $E_n$;
+				强学习算法$F(x)$。\\
+	
+	
+	%    		\STATE Extracting the set of reliable negative and/or positive samples $T_n$ from $U_n$ with help of $P_n$; 
+	%    		\label{ code:fram:extract }%对此行的标记，方便在文中引用算法的某个步骤
+	%    		\STATE Training ensemble of classifiers $E$ on $T_n \cup P_n$, with help of data in former batches; 
+	%    		\label{code:fram:trainbase}
+	%    		\STATE $E_n=E_{n-1}\cup E$; 
+	%    		\label{code:fram:add}
+	%    		\STATE Classifying samples in $U_n-T_n$ by $E_n$; 
+	%    		\label{code:fram:classify}
+	%    		\STATE Deleting some weak classifiers in $E_n$ so as to keep the capacity of $E_n$; 
+	%    		\label{code:fram:select}
+				\STATE 初始化权值分布
+				$$
+				D_1 = (w_{1,1},w_{1,2},...,w_{1,N}), \quad w_{1,i} = \frac{1}{N},\quad i = 1,2,...,N
+				$$ 
+				其中$D_m$表示第m次训练弱分类器对应的样本分布（权值），$w_{m,i}$ 表示每个样本的权值，初始化为均匀初始化。
+				
+				
+				\STATE 对每一次（m）的弱分类器训练都执行如下步骤：\\
+				(A).\\
+				使用当前数据分布$D_m$的数据，训练弱分类器$G_m(x)$
+				$$
+				G_m(x):X \rightarrow \{1,-1\}
+				$$
+				
+				(B).\\
+				计算所得弱分类器$G_m(x)$的分类误差：
+				$$
+				\begin{aligned}
+				 e_m &= \sum_{i=1}^{N}P(G_m(x_i) \ne y_i)\\
+				 &= \sum_{i=1}^{N}w_{wi} I(G_m(x_i) \ne y_i)\\
+				 &= \sum_{G_m(x_i \neq y_i)}w_i\\
+				\end{aligned}
+				$$
+				误差率就是将分类错误的那些样本的权重相加即可。
+				
+				(C).\\
+				由误差率计算本次的弱分类器在最终分类器中的系数$\alpha_m$,其表示在最终该弱分类器$G_m(x)$在最终分类器中的重要程度，准确率越高权重越大。
+				$$
+				\alpha_m = \frac{1}{2} \log{\frac{1-e_m}{e_m}}
+				$$
+				可以看出，是由误差率求出的。
+				\\
+				得出本次的 $f_m(x) = \alpha_m G_m(x)$
+				(D).\\
+				为下次训练$G_{m+1}(x)$调整数据的权重或者分布,得到$D_{m+1}$，调整策略根据样本预测的误差率来进行，分错的权重调大，分正确的权重调小。
+				$$
+				w_{m+1,i} =\frac{w_{m,i}}{Z_m}  \exp {(-\alpha_m {y_i G_m(x_i)})},\quad i=1,2,...,N
+				$$
+				其中可以看出，${y_i G_m(x_i)}$在分正确的情况下是等于-1的，分错误等于1。最终会将分正确的样本权重下调，错误的权重上调。
+				
+				
+				\STATE 构建基本分类器的线性组合：
+				$$
+				\begin{aligned}
+				F(x)  &= \sum_{m=1}^{M} \alpha_m G_m(x)  \\
+				&= \sum_{i=1}^{N} f_i(x)    \\
+				\end{aligned}
+				$$
+				如果$F(x)$的分类错误率达到要求，则终止，否则继续第2部，直到$F(x)$ 达到要求。\\
+				\STATE OVER
+	    	\end{algorithmic}
+  \end{algorithm}
+
+
+\begin{algorithm}[htb]
+	\begin{algorithmic}[l]
+	\REQUIRE 
+	\ENSURE
+	\STATE 如果$F(x)$的分类错误率达到要求，则终止，否则继续第2部，直到$F(x)$ 达到要求。\\
+\STATE OVER
+	\end{algorithmic}
+\end{algorithm}
+
+
+
+
+
+%    \begin{algorithm}
+%    	\caption{非线性支持向量机学习算法} 
+%    	\label{alg1}
+%    	\begin{algorithmic}
+%    		
+%    		\REQUIRE $n \geq 0 \vee x \neq 0$ 
+%    		\ENSURE $y = x^n$ 
+%    		\STATE $y \Leftarrow 1$ 
+%    		\IF{$n < 0$} 
+%    		\STATE $X \Leftarrow 1 / x$ 
+%    		\STATE $N \Leftarrow -n$ 
+%    		\ELSE 
+%    		\STATE $X \Leftarrow x$ 
+%    		\STATE $N \Leftarrow n$
+%    		\ENDIF 
+%    		\WHILE{$N \neq 0$} 
+%    		\IF{$N$ is even} 
+%    		\STATE $X \Leftarrow X \times X$ 
+%    		\STATE $N \Leftarrow N / 2$ 
+%    		\ELSE[$N$ is odd] 
+%    		\STATE $y \Leftarrow y \times X$ 
+%    		\STATE $N \Leftarrow N - 1$ 
+%    		\ENDIF 
+%    		\ENDWHILE
+%    	\end{algorithmic}
+%    \end{algorithm}
+% 
+%\section{标题二}
+%    \begin{algorithm}[htb] 
+%    	\caption{ 非线性支持向量机学习算法.} 
+%    	\label{alg:Framwork} 
+%    	\begin{algorithmic}[1] %这个1 表示每一行都显示数字
+%    		\REQUIRE ~~\\ %算法的输入参数：Input
+%%    		The set of positive samples for current batch, $P_n$;\\
+%%    		The set of unlabelled samples for current batch, $U_n$;\\
+%%    		Ensemble of classifiers on former batches, $E_{n-1}$;
+%    		训练数据集$T=\{(x_1,y_1),(x_2,y_2),...,(x_N,y_N)\}$其中$x_i \in X=R^n,y_i \in Y=\{-1,+1\},i=1,2,...,N $;\\
+%    		
+%    		
+%    		\ENSURE ~~\\ %算法的输出：Output
+%%    		Ensemble of classifiers on the current batch, $E_n$;
+%			分类决策函数。\\
+%
+%
+%%    		\STATE Extracting the set of reliable negative and/or positive samples $T_n$ from $U_n$ with help of $P_n$; 
+%%    		\label{ code:fram:extract }%对此行的标记，方便在文中引用算法的某个步骤
+%%    		\STATE Training ensemble of classifiers $E$ on $T_n \cup P_n$, with help of data in former batches; 
+%%    		\label{code:fram:trainbase}
+%%    		\STATE $E_n=E_{n-1}\cup E$; 
+%%    		\label{code:fram:add}
+%%    		\STATE Classifying samples in $U_n-T_n$ by $E_n$; 
+%%    		\label{code:fram:classify}
+%%    		\STATE Deleting some weak classifiers in $E_n$ so as to keep the capacity of $E_n$; 
+%%    		\label{code:fram:select}
+%			\STATE 选取适当的核函数$K(x,z)$和适当的参数$C$,构造并求解最优化问题
+%			$$
+%			\min_{\alpha} \quad \frac{1}{2}\sum_{i=1}^{N}\sum_{j=1}^{N}a_ia_jy_iy_jK(x_i,x_j)-\sum_{i=1}^{N}$$
+%			$$s.t. \quad \sum_{i=1}^{N}\alpha_iy_i=0$$
+%			$$\quad \quad 0 \le \alpha_i \le C, \quad i=1,2,...,N
+%			$$
+%			
+%			求得最优解 $\alpha^* = (\alpha^*_1,\alpha^*_2,...,\alpha^*_N)^T$
+%			\STATE 选取$\alpha^*$的一个正分量 $0 \textless \alpha^*_j \textless C$,计算
+%			$$
+%			b^* = y_i - \sum_{i=1}^{N}\alpha^*y_iK(x_i,x_j)
+%			$$
+%			\STATE 构造决策函数：
+%			$$
+%			f(x) = sign(\sum_{i=1}^{N}\alpha^*_i y_i K(x,x_i) + b^*)
+%			$$
+%			当$K(x,z)$是正定核函数，问题为凸规划问题，解是存在的，并且是最优解。
+%%    		\RETURN $E_n$; %算法的返回值
+%    	\end{algorithmic}
+%    \end{algorithm}
+%
+%
+%
+%
+%\section{标题二}
+%\begin{algorithm}[htb] 
+%	\caption{SMO算法.} 
+%	\label{alg:Framwork} 
+%	\begin{algorithmic}[1] %这个1 表示每一行都显示数字
+%		\REQUIRE ~~\\ %算法的输入参数：Input
+%		%    		The set of positive samples for current batch, $P_n$;\\
+%		%    		The set of unlabelled samples for current batch, $U_n$;\\
+%		%    		Ensemble of classifiers on former batches, $E_{n-1}$;
+%		训练数据集$T=\{(x_1,y_1),(x_2,y_2),...,(x_N,y_N)\}$其中$x_i \in X=R^n,y_i \in Y=\{-1,+1\},i=1,2,...,N ，$精度$\epsilon$;\\
+%		
+%		
+%		\ENSURE ~~\\ %算法的输出：Output
+%		%    		Ensemble of classifiers on the current batch, $E_n$;
+%		近似解$\hat{\alpha}$\\
+%		
+%		
+%		%    		\STATE Extracting the set of reliable negative and/or positive samples $T_n$ from $U_n$ with help of $P_n$; 
+%		%    		\label{ code:fram:extract }%对此行的标记，方便在文中引用算法的某个步骤
+%		%    		\STATE Training ensemble of classifiers $E$ on $T_n \cup P_n$, with help of data in former batches; 
+%		%    		\label{code:fram:trainbase}
+%		%    		\STATE $E_n=E_{n-1}\cup E$; 
+%		%    		\label{code:fram:add}
+%		%    		\STATE Classifying samples in $U_n-T_n$ by $E_n$; 
+%		%    		\label{code:fram:classify}
+%		%    		\STATE Deleting some weak classifiers in $E_n$ so as to keep the capacity of $E_n$; 
+%		%    		\label{code:fram:select}
+%		\STATE 初值$\alpha^(0)=0$,令$k=0$，表示第0次更新的$\alpha$值;
+%		\STATE 选取优化变量$\alpha_1^k,\alpha_2^k,$求解两个变量的最优化问题的解析解，得到$\alpha_1^{(k+1)},\alpha_2^{(k+2)}$,用他们更新$\alpha$为$\alpha^{(k+1)}$.
+%		
+%	
+%		\STATE 若在精度$\epsilon$范围内满足停机条件
+%		$$
+%		\sum_{i=1}^{N}\alpha_i y_i = 0, \quad 0 \le \alpha_i \le C, \quad i = 1,2,...,N
+%		$$
+%		
+%		
+%		$$	
+%y_i \cdot g(x_i)\left\{\begin{array}{l}
+%	\geq 1,\left\{ x_i \mid \alpha_i = 0 \right\} \\
+% = 1,\left\{x_i|0\textless \alpha_i \textless C   \right\}\\
+%	\le 1,\left\{   x_i|\alpha_i = C  \right\}
+%		\end{array}\right.
+%		$$
+%	其中，
+%	$$
+%	g(x_i) = \sum_{j=1}^{N}\alpha_j y_j K(x_j,x_i) + b
+%	$$
+%	
+%	$$
+%	b_1^{new} = -E_1 - y_1 K_{11}(\alpha_1^{new} - \alpha_1^{old} - y_2 K_{21}(\alpha_2^{new}- \alpha_2^{old}) + b^{old})
+%	$$
+%	$$
+%	b_2^{new} = -E_2 - y_1 K_{12}(\alpha_1^{new} - \alpha_1^{old} - y_2 K_{22}(\alpha_2^{new}- \alpha_2^{old}) + b^{old})
+%	$$
+%	如果 $\alpha_1^{new},\alpha_2^{new}$同时满足$0 < \alpha_i^{new} < C,i=1,2$,那么$b_1^{new}=b_2^{new}$,否则取$b^{new} = \frac{b_1^{new}+b_2^{new}}{2} $\\
+%	然后更新$E_i$:
+%	$$
+%	E_i^{new} = \sum_{S}y_i \alpha_i K{(x_i,x_j)} + b^{new} - y_i
+%	$$
+%	
+%	
+%	则转到（4）；否则令$k = k + 1$,转到(2);
+%		\STATE 取$\hat{\alpha}=\alpha^{(k+1)}$
+%	
+%	\end{algorithmic}
+%\end{algorithm}
+\end{document}
