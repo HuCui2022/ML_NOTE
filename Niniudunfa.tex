@@ -1,0 +1,227 @@
+\documentclass[UTF8]{ctexart}
+ 
+\CTEXsetup[format={\Large\bfseries}]{section}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\renewcommand{\algorithmicrequire}{ \textbf{Input:}} %Use Input in the format of Algorithm
+\renewcommand{\algorithmicensure}{ \textbf{Output:}} %UseOutput in the format of Algorithm
+% 将require 和 ensure 改成了input 和 output.
+ \newtheorem{thm}{\bf Theorem}[section]
+ % 定理。
+ 
+ 
+\title{机器学习笔记(5):牛顿法和拟牛顿法}
+\author{https://blog.csdn.net/gaocui883}
+\begin{document}
+ 
+\maketitle
+ 
+\section{牛顿法}
+牛顿法和拟牛顿法是求解无约束最优化问题的常用方法，收敛速度快。牛顿法需要求解黑塞矩阵的逆矩阵，计算比较复杂。
+
+拟牛顿法通过正定矩阵近似黑塞矩阵的逆矩阵或者黑塞矩阵本身，简化了计算过程。
+
+
+
+
+无约束优化：$\min _{x \in \mathbf{R}^{n}} f(x)$
+
+二阶泰勒展开：
+
+$f(x)=f\left(x^{(k)}\right)+g_{k}^{\mathrm{T}}\left(x-x^{(k)}\right)+\frac{1}{2}\left(x-x^{(k)}\right)^{\mathrm{T}} H\left(x^{(k)}\right)\left(x-x^{(k)}\right)$\\
+
+
+其中： $g_{k}=g\left(x^{(k)}\right)=\nabla f\left(x^{(k)}\right)$
+
+Hesse matrix : 
+$$H(x)=\left[\frac{\partial^{2} f}{\partial x_{i} \partial x_{j}}\right]_{n \times n}$$
+
+极小值的必要条件：
+$
+\begin{array}{c}
+	\nabla f(x)=0
+\end{array}
+$
+
+每次从$x^k$迭代，假设$x^{k+1}$ 满足：
+$$
+\nabla f\left(x^{(k+1)}\right)=0
+$$
+利用泰勒展开的结果：
+$$
+\nabla f(x)=g_{k}+H_{k}\left(x-x^{(k)}\right) = 0
+$$
+$$
+\begin{array}{c}
+x^{(k+1)}=x^{(k)}-H_{k}^{-1} g_{k} \\
+x^{(k+1)}=x^{(k)}+p_{k} \\
+H_{k} p_{k}=-g_{k}
+\end{array}
+$$
+用$x^k$与$x^{k+1}$不停的迭代，知道$g_{k}$逐渐真正的接近于0.
+
+\begin{algorithm}[htb] 
+	    	\caption{ 牛顿法：} 
+	    	\label{alg:Framwork} 
+	    	\begin{algorithmic}[1] %这个1 表示每一行都显示数字
+	    		\REQUIRE ~~\\ %算法的输入参数：Input
+	%    		The set of positive samples for current batch, $P_n$;\\
+	%    		The set of unlabelled samples for current batch, $U_n$;\\
+	%    		Ensemble of classifiers on former batches, $E_{n-1}$;
+	    		目标函数$f(x)$,梯度$g(x)=\nabla f(x)$, Hesse矩阵$H(x)$, 精度要求$\epsilon$
+	    		
+	    		\ENSURE ~~\\ %算法的输出：Output
+	%    		Ensemble of classifiers on the current batch, $E_n$;
+				$f(x)$的极小值点$x^*$。\\
+				\STATE 取初始值 $x^0$, $k=0$
+				\STATE 计算$g_{k} = \nabla f(x^{k})$
+				\STATE 如果$||g_{k}|| < \epsilon $,则停止计算，当前的 $x^{k}$ 就是 $x^{*}$
+				\STATE 计算黑塞矩阵$H(x)$, 求$ p_{k}$
+				$$
+				H_{k} p_{k}=-g_{k}
+				$$
+				\STATE $x^{k+1} = x^{k} +  p_{k}$
+				\STATE $k = k+1$ 重复到第二部，求$g_{k} = \nabla f(x^{k})$
+				
+	
+	    	\end{algorithmic}
+  \end{algorithm}
+
+牛顿法计算复杂之处在于求黑塞矩阵和黑塞矩阵的逆矩阵，而拟牛顿法的思路就是在这上边进行改进。
+
+\section{拟牛顿法}
+拟牛顿法的思路是用一个n阶矩阵 $G_k = G(x^k)$ 来近似相应的黑塞矩阵的逆矩阵$H^{-1}(x^{k})$;或者用一个n阶矩阵$B_k = B(x^k)$来近似黑塞矩阵本身$H(x^{k})$
+
+$$
+\nabla f(x)=g_{k}+H_{k}\left(x-x^{(k)}\right) = 0
+$$
+得到：
+$$
+g_{(k+1)} = \nabla f(x+1)=g_{k}+H_{k}\left(x^{k+1}-x^{(k)}\right) = 0
+$$
+$$
+g_{(k+1)}-g_{k} = H_{k}\left(x^{k+1}-x^{(k)}\right)
+$$
+设：$y_k = g_{(k+1)}-g_{k}, \delta_k = \left(x^{k+1}-x^{(k)}\right)$\\
+有：
+$$
+y_k = H_{k}\delta_k
+$$
+$$H_{k}^{-1} y_{k}=\delta_{k}$$
+
+当$H_{k}$ 为正定的，那么可以保证$f(x)$是下降方向的，也就是会不停的减少的。
+
+寻找一个$G_k$ 满足 ： 
+$G_{k+1} y_{k}=\delta_{k}$ 并且正定即可。
+
+\subsection{DFP算法}
+构造：$G_{k+1}=G_{k}+P_{k}+Q_{k}$\\
+$$G_{k+1} y_{k}=G_{k} y_{k}+P_{k} y_{k}+Q_{k} y_{k}$$
+让其中的
+$$\begin{array}{c}
+P_{k} y_{k}=\delta_{k} \\
+Q_{k} y_{k}=-G_{k} y_{k}
+\end{array}$$ 即可得到最终的$G_{k+1} y_{k}=\delta_{k}$
+
+构造Pk, Qk:
+$$\begin{array}{c}
+P_{k}=\frac{\delta_{k} \delta_{k}^{\mathrm{T}}}{\delta_{k}^{\mathrm{T}} y_{k}} \\
+Q_{k}=-\frac{G_{k} y_{k} y_{k}^{\mathrm{T}} G_{k}}{y_{k}^{\mathrm{T}} G_{k} y_{k}}
+\end{array}$$
+可以满足上述的要求。
+
+最终得到了迭代公式：$G_{k+1}=G_{k}+\frac{\delta_{k} \delta_{k}^{\mathrm{T}}}{\delta_{k}^{\mathrm{T}} y_{k}}-\frac{G_{k} y_{k} y_{k}^{\mathrm{T}} G_{k}}{y_{k}^{\mathrm{T}} G_{k} y_{k}}$
+
+\begin{algorithm}[h] 
+	\caption{ 拟牛顿法DFP算法：} 
+	\label{alg:Framwork2} 
+	\begin{algorithmic}[1] %这个1 表示每一行都显示数字
+		\REQUIRE ~~\\ %算法的输入参数：Input
+		%    		The set of positive samples for current batch, $P_n$;\\
+		%    		The set of unlabelled samples for current batch, $U_n$;\\
+		%    		Ensemble of classifiers on former batches, $E_{n-1}$;
+		目标函数$f(x)$,梯度$g(x)=\nabla f(x)$, Hesse矩阵$H(x)$, 精度要求$\epsilon$
+		
+		\ENSURE ~~\\ %算法的输出：Output
+		%    		Ensemble of classifiers on the current batch, $E_n$;
+		$f(x)$的极小值点$x^*$。\\
+		\STATE 取初始值 $x^0$, $k=0$，取正定对称矩阵$G_0 = I$.
+		\STATE 计算$g_{k} = \nabla f(x^{k})$, 如果$||g_{k}|| < \epsilon $,则停止计算，当前的 $x^{k}$ 就是 $x^{*}$.
+		\STATE 计算$p_k = -G_k g_k$,其中的$p_k$ 的计算用GK代替了牛顿法中的黑塞矩阵。
+		$$
+		x=x^{(k)}+\lambda p_{k}=x^{(k)}-\lambda H_{k}^{-1} g_{k}
+		$$ $$
+		f(x)=f\left(x^{(k)}\right)-\lambda g_{k}^{\mathrm{T}} H_{k}^{-1} g_{k}
+		$$
+		第二个公式是从开始的泰勒展开推出来的，表示正定矩阵条件下，f（x）必定会越来越小。
+		\STATE 一维搜索：求$\lambda_k$ 
+		$$
+		f\left(x^{(k)}+\lambda_{k} p_{k}\right)=\min _{\lambda \geqslant 0} f\left(x^{(k)}+\lambda p_{k}\right)
+		$$
+		
+		此时的$x^{(k+1)} = x^{(k)} + \lambda_k p_{k}$
+		\STATE 计算此时的$g_{k+1}$，如果达到要求，则停止，当前的 $x^{k+1}$ 就是 $x^{*}$，否则求
+		$G_{k+1}=G_{k}+\frac{\delta_{k} \delta_{k}^{\mathrm{T}}}{\delta_{k}^{\mathrm{T}} y_{k}}-\frac{G_{k} y_{k} y_{k}^{\mathrm{T}} G_{k}}{y_{k}^{\mathrm{T}} G_{k} y_{k}}$
+		，设置k=k+1.继续到$p_k = -G_k g_k$，继续迭代，直到收敛。
+		
+	
+		
+		
+	\end{algorithmic}
+\end{algorithm}
+
+
+\subsection{DFGS算法}
+DFP算法使用直接逼近$H^-1_k$矩阵的，如果改成逼近$H_k$矩阵的$B_k$矩阵，那么就是DFGS算法。
+$$B_{k+1} \delta_{k}=y_{k}$$
+$$B_{k+1}=B_{k}+P_{k}+Q_{k}$$
+$$B_{k+1} \delta_{k}=B_{k} \delta_{k}+P_{k} \delta_{k}+Q_{k} \delta_{k}$$
+$$\begin{array}{c}
+P_{k} \delta_{k}=y_{k} \\
+Q_{k} \delta_{k}=-B_{k} \delta_{k}\\
+B_{k+1}=B_{k}+\frac{y_{k} y_{k}^{\mathrm{T}}}{y_{k}^{\mathrm{T}} \delta_{k}}-\frac{B_{k} \delta_{k} \delta_{k}^{\mathrm{T}} B_{k}}{\delta_{k}^{\mathrm{T}} B_{k} \delta_{k}}
+\end{array}$$
+现在问题是，虽然$B_k$可以逼近$H_k$但是其实求解迭代时候还是需要用$H^{-1}_k$ 或者$G_{k}$.
+
+我们可以得知，$B_k$ 可以可以迭代得到，对于这种矩阵的逆矩阵可以使用Sherman-Morrision公式：
+$$\left(A+u v^{\mathrm{T}}\right)^{-1}=A^{-1}-\frac{A^{-1} u v^{\mathrm{T}} A^{-1}}{1+v^{\mathrm{T}} A^{-1} u}$$
+得到G的迭代公式：
+$$G_{k+1}=\left(I-\frac{\delta_{k} y_{k}^{\mathrm{T}}}{\delta_{k}^{\mathrm{T}} y_{k}}\right) G_{k}\left(I-\frac{\delta_{k} y_{k}^{\mathrm{T}}}{\delta_{k}^{\mathrm{T}} y_{k}}\right)^{\mathrm{T}}+\frac{\delta_{k} \delta_{k}^{\mathrm{T}}}{\delta_{k}^{\mathrm{T}} y_{k}}$$
+虽然形式与DFP方法所得到的形式不同，但是它是满足拟牛顿条件的。
+
+
+\begin{algorithm}[h] 
+	\caption{ 拟牛顿法DFGS算法：} 
+	\label{alg:Framwork3} 
+	\begin{algorithmic}[1] %这个1 表示每一行都显示数字
+		\REQUIRE ~~\\ %算法的输入参数：Input
+		%    		The set of positive samples for current batch, $P_n$;\\
+		%    		The set of unlabelled samples for current batch, $U_n$;\\
+		%    		Ensemble of classifiers on former batches, $E_{n-1}$;
+		目标函数$f(x)$,梯度$g(x)=\nabla f(x)$, Hesse矩阵$H(x)$, 精度要求$\epsilon$
+		
+		\ENSURE ~~\\ %算法的输出：Output
+		%    		Ensemble of classifiers on the current batch, $E_n$;
+		$f(x)$的极小值点$x^*$。\\
+		\STATE 取初始值 $x^0$, $k=0$，取正定对称矩阵$B_0 = I$.
+		\STATE 计算$g_{k} = \nabla f(x^{k})$, 如果$||g_{k}|| < \epsilon $,则停止计算，当前的 $x^{k}$ 就是 $x^{*}$.
+		\STATE 计算$B_k p_k =  g_k$,其中的$p_k$ 的计算用bK代替了牛顿法中的黑塞矩阵。
+		
+	
+		\STATE 一维搜索：求$\lambda_k$ 
+		$$
+		f\left(x^{(k)}+\lambda_{k} p_{k}\right)=\min _{\lambda \geqslant 0} f\left(x^{(k)}+\lambda p_{k}\right)
+		$$
+		
+		此时的$x^{(k+1)} = x^{(k)} + \lambda_k p_{k}$
+		\STATE 计算此时的$g_{k+1}$，如果达到要求，则停止，当前的 $x^{k+1}$ 就是 $x^{*}$，否则求
+		$B_{k+1}=B_{k}+\frac{y_{k} y_{k}^{\mathrm{T}}}{y_{k}^{\mathrm{T}} \delta_{k}}-\frac{B_{k} \delta_{k} \delta_{k}^{\mathrm{T}} B_{k}}{\delta_{k}^{\mathrm{T}} B_{k} \delta_{k}}
+		$
+		，设置k=k+1.继续到$p_k = -G_k g_k$，继续迭代，直到收敛。
+
+	\end{algorithmic}
+\end{algorithm}
+\end{document}

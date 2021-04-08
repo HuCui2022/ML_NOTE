@@ -1,0 +1,32 @@
+\documentclass[UTF8]{ctexart}
+ 
+\CTEXsetup[format={\Large\bfseries}]{section}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\renewcommand{\algorithmicrequire}{ \textbf{Input:}} %Use Input in the format of Algorithm
+\renewcommand{\algorithmicensure}{ \textbf{Output:}} %UseOutput in the format of Algorithm
+% 将require 和 ensure 改成了input 和 output.
+ \newtheorem{thm}{\bf Theorem}[section]
+ % 定理。
+ 
+ 
+\title{论文学习笔记(4):一些公式}
+\author{https://blog.csdn.net/gaocui883}
+\begin{document}
+ 
+\maketitle
+ 
+\section{图神经网络中的一些测试环境}
+
+
+\[h^{(l+1)}_{v_i} = \sigma \left( \sum_{j} \frac{1}{c_{ij}}h^{(l)}_{v_j}W^{(l)} \right) \, ,\]
+
+Get features4 \(\{h_{v_j}\}\) of neighboring nodes \(\{v_j\}\)
+Update node feature \(h_{v_i} \leftarrow \text{hash}\left(\sum_j h_{v_j}\right)\), where \(\text{hash}(\cdot)\) is (ideally) an injective hash function
+
+
+where \(j\) indexes the neighboring nodes of \(v_i\). \(c_{ij}\) is a normalization constant for the edge \((v_i,v_j)\) which originates from using the symmetrically normalized adjacency matrix \(D^{-\frac{1}{2}}AD^{-\frac{1}{2}}\) in our GCN model. We now see that this propagation rule can be interpreted as a differentiable and parameterized (with \(W^{(l)}\)) variant of the hash function used in the original Weisfeiler-Lehman algorithm. If we now choose an appropriate non-linearity and initialize the random weight matrix such that it is orthogonal (or e.g. using the initialization from Glorot \& Bengio, AISTATS 2010), this update rule becomes stable in practice (also thanks to the normalization with \(c_{ij}\)). And we make the remarkable observation that we get meaningful smooth embeddings where we can interpret distance as (dis-)similarity of local graph structures!
+\end{document}
